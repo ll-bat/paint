@@ -1,463 +1,469 @@
 <html>
-<head> 
-<meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
 
 
-<style>
-
-
-body{
- background-color:lightgrey;
- font-family:sans-serif;
- font-size:1.5em;
- font-weight:bold;
-}
-.container{
-
-}
-canvas
-{
- 
- border-top-left-radius:5px;
- box-shadow: 2 40px 80px 20 rgba(10, 110, 10, 0.7),0 4px 80px 20 rgba(10, 110, 10, 0.7);
- background-color:white;
-}
-canvas:hover{
- cursor:url('pencil.cur'),auto;
-}
-
-
-.toolbar{
- display:inline-block;
-}
-
-.box {
-    width: 200px; 
-	height: 100px;
-	border: 2px solid green;
-	position: absolute;
-	top: 150px;
-	left: 50px;
-	cursor:pointer;
-	display: none;
-}
-
-.helper {
-	width: 200px;
-	height: 100px;
-}
-
-.circle {
-	width: 14px;
-	height: 14px;
-	background-color: lightgrey; 
-	border-radius: 50%;
-	position: absolute;
-	border: 2px solid grey;
-}
-
-</style>
-
- <script>
-        let k = 1
- 
-        function $(id){
-		  return document.getElementById(id);
+	<style>
+		body {
+			background-color: lightgrey;
+			font-family: sans-serif;
+			font-size: 1.5em;
+			font-weight: bold;
 		}
-        function elt(name,attributes){
-		  var node = document.createElement(name);
-		  
-		  if(attributes)
-		     for(var attr in attributes)
-			    if(attributes.hasOwnProperty(attr)){
-				   node.setAttribute(attr,attributes[attr]);
-		  }
-		    for(var i = 2; i< arguments.length;i++){
-			  var child = arguments[i];
-			     if(typeof child === "string")
-				   child = document.createTextNode(child);
-				   
-				   node.appendChild(child);
+
+		.container {}
+
+		canvas {
+
+			border-top-left-radius: 5px;
+			box-shadow: 2 40px 80px 20 rgba(10, 110, 10, 0.7), 0 4px 80px 20 rgba(10, 110, 10, 0.7);
+			background-color: white;
+		}
+
+		canvas:hover {
+			cursor: url('pencil.cur'), auto;
+		}
+
+
+		.toolbar {
+			display: inline-block;
+		}
+
+		.box {
+			width: 200px;
+			height: 100px;
+			border: 2px solid green;
+			position: absolute;
+			top: 150px;
+			left: 50px;
+			cursor: pointer;
+			display: none;
+		}
+
+		.helper {
+			width: 200px;
+			height: 100px;
+		}
+
+		.circle {
+			width: 14px;
+			height: 14px;
+			background-color: lightgrey;
+			border-radius: 50%;
+			position: absolute;
+			border: 2px solid grey;
+		}
+	</style>
+
+	<script>
+		let k = 1
+
+		function $(id) {
+			return document.getElementById(id);
+		}
+		function elt(name, attributes) {
+			var node = document.createElement(name);
+
+			if (attributes)
+				for (var attr in attributes)
+					if (attributes.hasOwnProperty(attr)) {
+						node.setAttribute(attr, attributes[attr]);
+					}
+			for (var i = 2; i < arguments.length; i++) {
+				var child = arguments[i];
+				if (typeof child === "string")
+					child = document.createTextNode(child);
+
+				node.appendChild(child);
 			}
 			return node;
 		}
-		
+
 		var controls = Object.create(null);
-		var tools    = Object.create(null);
-		
-		function relativePos(event,element){
-		  var rect = element.getBoundingClientRect();
-		    // console.log(event.clientY-rect.top);
-		   // console.log(event.clientX  + " : " + event.clientX - rect.left);
-		  return {x:Math.floor(event.clientX - rect.left),y:Math.floor(event.clientY - rect.top)};
-		 }
-		 
+		var tools = Object.create(null);
 
-	
-		
-		 function createPaint(){
-		 
-              var canvas = elt("canvas",{width:window.innerWidth-30,height:window.innerHeight-120,id:'canvas',style:'margin-left:15px;'});
-              var cx = canvas.getContext("2d");
-              var toolbar = elt("div",{class:"toolbar"});
-              for(var name in controls){
-                 // toolbar.appendChild(controls[name](cx));
-				     
-				   var li  = elt("li");
-				   var a   = elt("a",{href:"#"});
-				     a.appendChild(controls[name](cx));
-					 li.appendChild(a);
-					  document.getElementById("first_li").appendChild(li);
-					   
-					  
-				  }
-             
-              var panel = elt("div",{class:"picture,panel"},canvas);
-              document.getElementById("start").appendChild(elt("div", null,toolbar,panel));
-  
+		function relativePos(event, element) {
+			var rect = element.getBoundingClientRect();
 
-          }
-		 
-		  let runAtOnce = ['helper', 'Transparent'];
-		  let isSelected = "";
-		  let wasSelected = "";
-		   
-		  controls.tool = function(cx){
-		   var select = elt("select",{class:'form-control'});
-		       addEventListener("change",function(){
-			      if(['maximize','minimize'].includes(select.value)){
-				      tools[select.value](cx)
-				  }
-				  
-			      if(select.value == "Erase")
-				       goAndSelectErase();
-				  else 
-					   goAndCloseErase();
-				  
-				  toolChanges(select.value,cx);
-			   });
-		      for(var name in tools) 
-			    select.appendChild(elt("option",{class:'option'},name));
-				
-			cx.canvas.addEventListener("mousedown",function(event){
-			  
-			   if(event.which == 1){
-			      tools[select.value](event,cx);
-				 
-				  event.preventDefault();
-			   }
-			  
-			  });
-			  
- 			  
-			   return elt("span",null,"Tool:",select);
-		  };
-		
-			
-			
-		 controls.color = function(cx){
-		  var input  = elt("input",{type:"color",class:'form-control'});
-		  input.addEventListener("change",function(){
-		    cx.fillStyle = input.value;
-			cx.strokeStyle = input.value;
-		  });
-		  return elt("span",null,"Color :",input);
-		 };
-		  
-		 controls.brushSize = function(cx){
-		  var select = elt("select",{class:'form-control'});
-		  var sizes = [1,2,3,5,8,10,15,18,25,33,45,59,75,100];
-		   sizes.forEach(function(size){
-		      select.appendChild(elt("option",{value:size},size + " pixels"));
-		    });
-			select.addEventListener("change",function(){
-			  cx.lineWidth = select.value;
-			  });
-			  
-			  return elt("span",null,"Brush size :",select);
-		 };
-		   
-		  
-		  
-		  
-		  function loadImageURL(cx,url){
-		    var image = document.createElement("img");
-			  image.crossOrigin = "Anonymous";
-			  image.addEventListener("load",function(){
-			    var color = cx.fillStyle, size  = cx.lineWidth;
-				let width = image.width*k, height = image.height*k
-				
+			const points = {}
+			if (event.clientX !== undefined) {
+				points.x = event.clientX
+				points.y = event.clientY
+			} else {
+				points.x = event.x
+				points.y = event.y
+			}
+
+			// console.log(event.clientY-rect.top);
+			// console.log(event.clientX  + " : " + event.clientX - rect.left);
+			return { x: Math.floor(points.x - rect.left), y: Math.floor(points.y - rect.top) };
+		}
+
+
+
+
+		function createPaint() {
+
+			var canvas = elt("canvas", { width: window.innerWidth - 30, height: window.innerHeight - 120, id: 'canvas', style: 'margin-left:15px;' });
+			var cx = canvas.getContext("2d");
+			var toolbar = elt("div", { class: "toolbar" });
+			for (var name in controls) {
+				// toolbar.appendChild(controls[name](cx));
+
+				var li = elt("li");
+				var a = elt("a", { href: "#" });
+				a.appendChild(controls[name](cx));
+				li.appendChild(a);
+				document.getElementById("first_li").appendChild(li);
+
+
+			}
+
+			var panel = elt("div", { class: "picture,panel" }, canvas);
+			document.getElementById("start").appendChild(elt("div", null, toolbar, panel));
+
+
+		}
+
+		let runAtOnce = ['helper', 'Transparent'];
+		let isSelected = "";
+		let wasSelected = "";
+
+		controls.tool = function (cx) {
+			var select = elt("select", { class: 'form-control' });
+			addEventListener("change", function () {
+				if (['maximize', 'minimize'].includes(select.value)) {
+					tools[select.value](cx)
+				}
+
+				if (select.value == "Erase")
+					goAndSelectErase();
+				else
+					goAndCloseErase();
+
+				toolChanges(select.value, cx);
+			});
+			for (var name in tools)
+				select.appendChild(elt("option", { class: 'option' }, name));
+
+			cx.canvas.addEventListener("mousedown", function (event) {
+
+				if (event.which == 1) {
+					tools[select.value](event, cx);
+
+					event.preventDefault();
+				}
+
+			});
+
+
+			return elt("span", null, "Tool:", select);
+		};
+
+
+
+		controls.color = function (cx) {
+			var input = elt("input", { type: "color", class: 'form-control' });
+			input.addEventListener("change", function () {
+				cx.fillStyle = input.value;
+				cx.strokeStyle = input.value;
+			});
+			return elt("span", null, "Color :", input);
+		};
+
+		controls.brushSize = function (cx) {
+			var select = elt("select", { class: 'form-control' });
+			var sizes = [1, 2, 3, 5, 8, 10, 15, 18, 25, 33, 45, 59, 75, 100];
+			sizes.forEach(function (size) {
+				select.appendChild(elt("option", { value: size }, size + " pixels"));
+			});
+			select.addEventListener("change", function () {
+				cx.lineWidth = select.value;
+			});
+
+			return elt("span", null, "Brush size :", select);
+		};
+
+
+
+
+		function loadImageURL(cx, url) {
+			var image = document.createElement("img");
+			image.crossOrigin = "Anonymous";
+			image.addEventListener("load", function () {
+				var color = cx.fillStyle, size = cx.lineWidth;
+				let width = image.width * k, height = image.height * k
+
 				cx.canvas.width = width
 				cx.canvas.height = height
-				
-				cx.drawImage(image,0,0, width,height);
+
+				cx.drawImage(image, 0, 0, width, height);
 				cx.fillStyle = color;
 				cx.strokeStyle = color;
 				cx.lineWidth = size;
-			  });
-			  
-			  image.src = url;
-		  }
-		  
-		  controls.openFile = function(cx){
-		    var input  = elt("input",{type:"file",class:'form-control'});
-			 input.addEventListener("change",function(){
-			    if(input.files.length == 0) return;
-				 var reader = new FileReader();
-				  reader.addEventListener("load",function(){
-				   loadImageURL(cx,reader.result);
-				  });
-				   reader.readAsDataURL(input.files[0]);
-			 });
-			 return elt("div",null,"Open File: ",input);
-		  };
-		 controls.loadURL = function(cx){
-		   var input  = elt("input",{type:"text",class:'form-control'})
-		   var div    = elt("div",{class:'input-group-btn'});
-		   var button = elt("button",{class:'btn btn-default',style:'margin-top:20px;'},"load");
-		   div.appendChild(button);
-		   var b_ = elt("div",{class:'input-group',style:'margin-top:10px;'},"Open URL: ",input,div);
-		   var form = elt("form",{class:'navbar-form navbar-left',style:"margin-top:-10px;"},b_);
-		       form.addEventListener("click",function(event){
-			     event.preventDefault();
-				 loadImageURL(cx,input.value);
-			   });
-			   
-			   return form;
-		 };
-		 controls.save = function(cx){
-		    var link = elt("a",{class:'btn btn-danger',style:'margin-top:20px;'},"Save");
-			    link.download = "YourImage.png";
-				link.setAttribute('crossOrigin', 'anonymous');
-			  function update(){
-			    try {
-				  //debugBase64(cx.canvas.toDataURL());				   
-				     link.href = cx.canvas.toDataURL();
-			         window.document.execCommand("SaveAs");
-			
-				}
-				catch(e){
-				  
-				   link.href = "javascript:alert(" + JSON.stringify("Can't save: " + e.toString()) + ")";
-                     throw e;
-				}
-			  }
-			  
-				link.addEventListener("mouseover",update);
-                link.addEventListener("focus",update);
-				
-                 return link;
-		  };
+			});
 
-          function trackDrage(onMove,onEnd){
-		    function end(event){
-			  removeEventListener("mousemove",onMove);
-			  removeEventListener("mouseup",end);
-			  if(onEnd)
-			    onEnd(event);
+			image.src = url;
+		}
+
+		controls.openFile = function (cx) {
+			var input = elt("input", { type: "file", class: 'form-control' });
+			input.addEventListener("change", function () {
+				if (input.files.length == 0) return;
+				var reader = new FileReader();
+				reader.addEventListener("load", function () {
+					loadImageURL(cx, reader.result);
+				});
+				reader.readAsDataURL(input.files[0]);
+			});
+			return elt("div", null, "Open File: ", input);
+		};
+		controls.loadURL = function (cx) {
+			var input = elt("input", { type: "text", class: 'form-control' })
+			var div = elt("div", { class: 'input-group-btn' });
+			var button = elt("button", { class: 'btn btn-default', style: 'margin-top:20px;' }, "load");
+			div.appendChild(button);
+			var b_ = elt("div", { class: 'input-group', style: 'margin-top:10px;' }, "Open URL: ", input, div);
+			var form = elt("form", { class: 'navbar-form navbar-left', style: "margin-top:-10px;" }, b_);
+			form.addEventListener("click", function (event) {
+				event.preventDefault();
+				loadImageURL(cx, input.value);
+			});
+
+			return form;
+		};
+		controls.save = function (cx) {
+			var link = elt("a", { class: 'btn btn-danger', style: 'margin-top:20px;' }, "Save");
+			link.download = "YourImage.png";
+			link.setAttribute('crossOrigin', 'anonymous');
+			function update() {
+				try {
+					//debugBase64(cx.canvas.toDataURL());				   
+					link.href = cx.canvas.toDataURL();
+					window.document.execCommand("SaveAs");
+
 				}
-			  addEventListener("mousemove",onMove);
-			  addEventListener("mouseup",end);
+				catch (e) {
+
+					link.href = "javascript:alert(" + JSON.stringify("Can't save: " + e.toString()) + ")";
+					throw e;
+				}
 			}
 
+			link.addEventListener("mouseover", update);
+			link.addEventListener("focus", update);
 
-		 tools.Line = function(event,cx,onEnd){
-		 
-            cx.lineCap = "round";
-   
-				 let pos = relativePos(event,cx.canvas);
-                //  console.log(pos);
-                 trackDrage(function(event){
-                    cx.beginPath();
-                    cx.moveTo(pos.x,pos.y);
-					pos = relativePos(event,cx.canvas);
-		
-                    cx.lineTo(pos.x,pos.y);
-					cx.stroke();
-               },onEnd);
-               };
-		 tools.Erase = function(event,cx){
+			return link;
+		};
 
-		   cx.globalCompositeOperation = "destination-out";
-		   tools.Line(event,cx,function(){cx.globalCompositeOperation = "source-over";});
-		 };
+		function trackDrage(onMove, onEnd) {
+			function end(event) {
+				removeEventListener("mousemove", onMove);
+				removeEventListener("mouseup", end);
+				if (onEnd)
+					onEnd(event);
+			}
+			addEventListener("mousemove", onMove);
+			addEventListener("mouseup", end);
+		}
 
-         function myErase(ev1, size, cx){	
+
+		tools.Line = function (event, cx, onEnd) {
+
+			cx.lineCap = "round";
+
+			let pos = relativePos(event, cx.canvas);
+			//  console.log(pos);
+			trackDrage(function (event) {
+				cx.beginPath();
+				cx.moveTo(pos.x, pos.y);
+				pos = relativePos(event, cx.canvas);
+
+				cx.lineTo(pos.x, pos.y);
+				cx.stroke();
+			}, onEnd);
+		};
+		tools.Erase = function (event, cx) {
+
+			cx.globalCompositeOperation = "destination-out";
+			tools.Line(event, cx, function () { cx.globalCompositeOperation = "source-over"; });
+		};
+
+		function myErase(ev1, size, cx) {
 			let pos = relativePos(ev1, cx.canvas)
 
 			cx.globalCompositeOperation = "destination-out";
 			cx.beginPath();
-			cx.rect(pos.x,pos.y,  size.width, size.height)
+			cx.rect(pos.x, pos.y, size.width, size.height)
 			cx.fill();
 
 			cx.globalCompositeOperation = "source-over";
-		 }
+		}
 
-		 tools.Text = function(event,cx){
-		  var text = prompt("Text","");
-		    if(text){
-			  var pos = relativePos(event,cx.canvas);
-			  cx.font = Math.max(7,cx.lineWidth) + "px sans-serif";
-			  cx.fillText(text,pos.x,pos.y);
+		tools.Text = function (event, cx) {
+			var text = prompt("Text", "");
+			if (text) {
+				var pos = relativePos(event, cx.canvas);
+				cx.font = Math.max(7, cx.lineWidth) + "px sans-serif";
+				cx.fillText(text, pos.x, pos.y);
 			}
-		 };
+		};
 
 
-		  tools.Spray = function(event,cx){
-		    var radius = cx.lineWidth/2 , area = radius * radius * Math.PI;
+		tools.Spray = function (event, cx) {
+			var radius = cx.lineWidth / 2, area = radius * radius * Math.PI;
 			var dotsPerTick = area / 30;
-			var currentPos = relativePos(event,cx.canvas);
+			var currentPos = relativePos(event, cx.canvas);
 			//var colors = ['red','orange','yellow','green','blue','indigo','violet'];
 			//var rd_num   = Math.random() * 7 - 1;
-			var spray = setInterval(function(){
-			    for(var i = 0; i< dotsPerTick; i++){
-				   
-				   var offset = randomPointInRadius(radius, i);
-				   cx.fillRect(currentPos.x + offset.x,currentPos.y + offset.y,1,1);
-				  }
-			   },5);
-			   trackDrage(function(event){
-			    currentPos = relativePos(event,cx.canvas);
+			var spray = setInterval(function () {
+				for (var i = 0; i < dotsPerTick; i++) {
+
+					var offset = randomPointInRadius(radius, i);
+					cx.fillRect(currentPos.x + offset.x, currentPos.y + offset.y, 1, 1);
+				}
+			}, 5);
+			trackDrage(function (event) {
+				currentPos = relativePos(event, cx.canvas);
 				//rd_num     = Math.random() * 7 - 1;
-				 event.preventDefault();
-			   },function(){clearInterval(spray);});
-		  };
-		 function randomPointInRadius(radius, i) { 
-		    
-			for (;;) 
-             { 
-			  
-			   var x = Math.random()*6 - 3
-               var y = Math.random()*6 - 3
-				
-			   if ( (( (x*x + y*y <=2 && x*x + y*y >1) || 
-			        (x*x + y*y <=3.8 && x*x + y*y >2.2)) && 
-					(x*x > .8 && y*y > .3)) || 
-					(((x*x < .2) && (y*y <.01) && (x < -Math.sqrt(.16) || x > Math.sqrt(.16)) ) || ((x*x < .01) && (y*y < .2) ) ))
-					
-			     return {x:x*radius,y:y*radius}
-			 } 
-		  }
-		
-		  tools.maximize = function(cx){
-		      k = 5
-			  
-		  }
-	
-          tools.minimize = function(cx){
-		      k = 1 / 5
-		  }	
-		  
-		  tools.size = function(event,cx){
-		      let w = prompt('Enter canvas size')
-			  w = w.split(' ')
-			  
-			  cx.canvas.width = w[0]
-			  cx.canvas.height = w[1]
-		  }
-		  
-		  tools.setBgColor = function(event,cx){
-		      let color = prompt('Enter color in hex')
-			  cx.canvas.width = cx.canvas.width 
-			  cx.canvas.height = cx.canvas.height 
-			  cx.fillStyle=color 
-		      cx.rect(0,0,cx.canvas.width, cx.canvas.height)
-			  cx.fill()
-		  }
-		  
-		  tools.setCanvasColor = function(event,cx){
-		      let color = prompt('Enter color')
-			  cx.canvas.style.backgroundColor = color
-		  }
-		
+				event.preventDefault();
+			}, function () { clearInterval(spray); });
+		};
+		function randomPointInRadius(radius, i) {
+
+			for (; ;) {
+
+				var x = Math.random() * 6 - 3
+				var y = Math.random() * 6 - 3
+
+				if ((((x * x + y * y <= 2 && x * x + y * y > 1) ||
+					(x * x + y * y <= 3.8 && x * x + y * y > 2.2)) &&
+					(x * x > .8 && y * y > .3)) ||
+					(((x * x < .2) && (y * y < .01) && (x < -Math.sqrt(.16) || x > Math.sqrt(.16))) || ((x * x < .01) && (y * y < .2))))
+
+					return { x: x * radius, y: y * radius }
+			}
+		}
+
+		tools.maximize = function (cx) {
+			k = 5
+
+		}
+
+		tools.minimize = function (cx) {
+			k = 1 / 5
+		}
+
+		tools.size = function (event, cx) {
+			let w = prompt('Enter canvas size')
+			w = w.split(' ')
+
+			cx.canvas.width = w[0]
+			cx.canvas.height = w[1]
+		}
+
+		tools.setBgColor = function (event, cx) {
+			let color = prompt('Enter color in hex')
+			cx.canvas.width = cx.canvas.width
+			cx.canvas.height = cx.canvas.height
+			cx.fillStyle = color
+			cx.rect(0, 0, cx.canvas.width, cx.canvas.height)
+			cx.fill()
+		}
+
+		tools.setCanvasColor = function (event, cx) {
+			let color = prompt('Enter color')
+			cx.canvas.style.backgroundColor = color
+		}
+
 		let dColor;
 
-		tools.CustomColor =  function(event,cx){
-	
-			color = getColor({x:event.clientX, y:event.clientY},cx)
+		tools.CustomColor = function (event, cx) {
 
-            cx.fillStyle = color
+			color = getColor({ x: event.clientX, y: event.clientY }, cx)
+
+			cx.fillStyle = color
 			cx.strokeStyle = color
 			dColor = color
 			console.log(dColor)
 		}
 
-		function getColor(event,cx){
+		function getColor(event, cx) {
 
-           pos = relativePos({clientX:event.x || event.clientX, clientY:event.y || event.clientY}, cx.canvas)
-           x = pos.x
-           y = pos.y
-           
-           data = cx.getImageData(x,y,1,1).data
-           
-           hex = "#" + ("000000" + rgbToHex(data[0], data[1], data[2])).slice(-6)
-           return hex
-        }
+			pos = relativePos({ clientX: event.x || event.clientX, clientY: event.y || event.clientY }, cx.canvas)
+			x = pos.x
+			y = pos.y
 
+			data = cx.getImageData(x, y, 1, 1).data
+
+			hex = "#" + ("000000" + rgbToHex(data[0], data[1], data[2])).slice(-6)
+			return hex
+		}
 
 		let cos = []
 
-		tools.getPoints = function(event,cx){
+		tools.getPoints = function (event, cx) {
 
-            cos.push({x:event.clientX, y:event.clientY})
+			cos.push({ x: event.clientX, y: event.clientY })
 		}
 
 
-		tools.Transparent = function(event,cx){
-			 if (wasSelected != 'helper') {
-				 return ;
-			 }
+		tools.Transparent = function (event, cx) {
+			if (wasSelected != 'helper') {
+				return;
+			}
 
-			 $('box').addEventListener('contextmenu', work);
+			$('box').addEventListener('contextmenu', work);
 
-			 $('box').addEventListener('cancel', function fn(e) {
-				 $('box').removeEventListener('contextmenu', work);
-				 $('box').removeEventListener('cance l', fn);
-			 })
+			$('box').addEventListener('cancel', function fn(e) {
+				$('box').removeEventListener('contextmenu', work);
+				$('box').removeEventListener('cance l', fn);
+			})
 
-			 function work(e){
-					transparent(cx)
-					e.preventDefault()
-			 }
+			function work(e) {
+				transparent(cx)
+				e.preventDefault()
+			}
 		}
 
-		function transparent(cx){
-			for (let i=0; i<15; i++)  
+		function transparent(cx) {
+			for (let i = 0; i < 15; i++)
 				makeItTransparent(cx)
 		}
 
-		function makeItTransparent(cx){
-				myErase({clientX:helper['left'], clientY:helper['top']}, {width: helper['width'], height:helper['height']}, cx)
+		function makeItTransparent(cx) {
+			myErase({ clientX: helper['left'], clientY: helper['top'] }, { width: helper['width'], height: helper['height'] }, cx)
 		}
-	
-		function toolChanges(newValue, cx){
-			   wasSelected = isSelected;
-			   isSelected = newValue
 
-			   if (runAtOnce.includes(newValue))
-			       tools[newValue](null,cx);
-			   
-			   if (!['helper', 'Transparent'].includes(newValue)){
-		   	       setStyle($('box'), {
-		   	     	 display: 'none',
-		   	     	 left: '50px',
-		   	     	 top: '150px',
-		   	     	 width: '200px',
-		   	     	 height: '100px'
-		   	       })
+		function toolChanges(newValue, cx) {
+			wasSelected = isSelected;
+			isSelected = newValue
 
-		   	       helper['left'] = 50;
-		   	       helper['top'] = 150;
-		   	       helper['width'] = 200;
-		   	       helper['height'] = 100;
+			if (runAtOnce.includes(newValue))
+				tools[newValue](null, cx);
 
-			   }
-			
-			if (wasSelected == 'Transparent'){
+			if (!['helper', 'Transparent'].includes(newValue)) {
+				setStyle($('box'), {
+					display: 'none',
+					left: '50px',
+					top: '150px',
+					width: '200px',
+					height: '100px'
+				})
+
+				helper['left'] = 50;
+				helper['top'] = 150;
+				helper['width'] = 200;
+				helper['height'] = 100;
+
+			}
+
+			if (wasSelected == 'Transparent') {
 				let event = new Event('cancel')
 				$('box').dispatchEvent(event)
 			}
@@ -466,200 +472,317 @@ canvas:hover{
 		const dom = document;
 
 		let helper = {
-			'top' : 150,
-			'left' : 50,
-			'width' : 200,
-			'height' : 100
+			'top': 150,
+			'left': 50,
+			'width': 200,
+			'height': 100
 		}
 
 		tools.helper = (ev, cx) => {
 			let parent = $('box')
 			let el = $('helper')
 
-			let[mx,my] = [0,0];
-			let[lx,ly] = [0,0];
-			
-			setStyle(parent, {display:'block'})
+			let [mx, my] = [0, 0];
+			let [lx, ly] = [0, 0];
 
-			el.addEventListener('mousedown', (e)=> {				
-				[mx,my] = [e.pageX, e.pageY]
+			setStyle(parent, { display: 'block' })
+
+			el.addEventListener('mousedown', (e) => {
+				[mx, my] = [e.pageX, e.pageY]
 				dom.body.addEventListener('mousemove', move);
 
-				dom.body.addEventListener('mouseup', function fn(e){
-						helper['top'] = ly;
-						helper['left'] = lx;
-			          	dom.body.removeEventListener('mousemove', move)
-						dom.body.removeEventListener('mouseup', fn)
-		     	});
+				dom.body.addEventListener('mouseup', function fn(e) {
+					helper['top'] = ly;
+					helper['left'] = lx;
+					dom.body.removeEventListener('mousemove', move)
+					dom.body.removeEventListener('mouseup', fn)
+				});
 			});
 
-			function move(e){
-                setStyle(parent, {
+			function move(e) {
+				setStyle(parent, {
 					top: (helper['top'] + (e.pageY - my)) + 'px',
 					left: (helper['left'] + (e.pageX - mx)) + 'px'
 				})
 
 				lx = helper['left'] + e.pageX - mx;
-			    ly = helper['top'] + e.pageY - my;
+				ly = helper['top'] + e.pageY - my;
 			}
 		}
 
+		tools.printColorsOfThisRange = (ev, cx) => {
+			let startPoint = { x: ev.clientX, y: ev.clientY }
+			let endPoint = { x: null, y: null }
+			cx.canvas.addEventListener('mouseup', function tmpEvent(endEvent) {
+				cx.canvas.removeEventListener('mouseup', tmpEvent)
+				endPoint.x = endEvent.clientX
+				endPoint.y = endEvent.clientY
+				run();
+			})
 
+			function run() {
+				startPoint = relativePos(startPoint, cx.canvas)
+				endPoint = relativePos(endPoint, cx.canvas)
+
+				const colorsMap = {}
+				for (let x = startPoint.x; x < endPoint.x; x++) {
+					for (let y = startPoint.y; y < endPoint.y; y++) {
+						const color = getPxColor(x, y, cx)
+						colorsMap[color] = true
+					}
+				}
+				console.log(Object.keys(colorsMap))
+			}
+		}
+
+		tools.printColorsOfTheLine = (ev, cx) => {
+			let startPoint = { x: ev.clientX, y: ev.clientY }
+			let endPoint = { x: null, y: null }
+			cx.canvas.addEventListener('mouseup', function tmpEvent(endEvent) {
+				cx.canvas.removeEventListener('mouseup', tmpEvent)
+				endPoint.x = endEvent.clientX
+				endPoint.y = endEvent.clientY
+				run();
+			})
+
+			function run() {
+				startPoint = relativePos(startPoint, cx.canvas)
+				endPoint = relativePos(endPoint, cx.canvas)
+
+				const colorsMap = {}
+				for (let x = startPoint.x; x < endPoint.x; x++) {
+					const color = getPxColor(x, startPoint.y, cx)
+					colorsMap[color] = true
+				}
+				console.log(Object.keys(colorsMap))
+			}
+		}
+
+		tools.makeFigureBackgroundTransparent = (ev, cx) => {
+			const colors = prompt('Enter space separated exclude colors (e.i those colors which you want to make transparent')
+			const replaceFields = ['"', "'", ' ', '[', '{', ']', '}']
+			
+			const colorsArray = colors
+				.trim()
+				.split(',')
+				.map(c => {
+					let str = c;
+					replaceFields.forEach(char => str = str.replaceAll(char, ''))
+					return str
+				})
+
+			const excludeColors = colorsArray
+			console.log(excludeColors)
+
+			const width = cx.canvas.width
+			const height = cx.canvas.height
+
+			console.log("iterating left to right")
+			for (let i = 0; i < width; i++) {
+				for (let j = 0; j < height; j++) {
+					const pxColor = getPxColor(i, j, cx)
+					if (excludeColors.includes(pxColor)) {
+						makePixelTransparent(cx, i, j)
+					}
+					// makePixelTransparent(cx, i, j)
+				}
+				console.log(`finished ${i} out of ${width}`)
+			}
+
+
+			console.log('done')
+
+			// const pos = relativePos(ev, cx.canvas)
+			// for (let i = 0; i < 100; i++) {
+			// 	for (let j = 0; j < 100; j++) {
+			// 		makePixelTransparent(cx, pos.x + i, pos.y + j)
+			// 	}
+			// }
+		}
+
+		function getPxColor(x, y, cx) {
+			data = cx.getImageData(x, y, 1, 1).data
+			hex = "#" + ("000000" + rgbToHex(data[0], data[1], data[2])).slice(-6)
+			return hex
+		}
+
+		function setPixelColor(ctx, x, y, c) {
+			ctx.save();
+			ctx.fillStyle = c;
+			ctx.fillRect(x, y, 1, 1);
+			ctx.restore();
+
+		}
+
+		function makePixelTransparent(ctx, x, y) {
+			var imgd = ctx.getImageData(x, y, 1, 1),
+				pix = imgd.data;
+
+			for (var i = 0, n = pix.length; i < n; i += 4) {
+				var r = pix[i],
+					g = pix[i + 1],
+					b = pix[i + 2];
+				pix[i + 3] = 0;
+			}
+
+			ctx.putImageData(imgd, x, y);
+		}
 
 		function rgbToHex(r, g, b) {
-            if (r > 255 || g > 255 || b > 255)
-                 throw "Invalid color component";
-             return ((r << 16) | (g << 8) | b).toString(16);
-        }
-				
-				
-
-		function debugBase64(base64URL){
-                var win = window.open();
-                win.document.write('<iframe src="' + base64URL  + '" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>');
+			if (r > 255 || g > 255 || b > 255)
+				throw "Invalid color component";
+			return ((r << 16) | (g << 8) | b).toString(16);
 		}
-		
-		function setStyle(el, style){
-			for (let a in style){
+
+
+
+		function debugBase64(base64URL) {
+			var win = window.open();
+			win.document.write('<iframe src="' + base64URL + '" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>');
+		}
+
+		function setStyle(el, style) {
+			for (let a in style) {
 				el.style[a] = style[a]
 			}
 		}
 
-		function tout(fn, t=200){
+		function tout(fn, t = 200) {
 			setTimeout(fn, t)
 		}
-	  
-		(()=>{
+
+		(() => {
 			tout(() => {
 
-				[{button: 'top', changes: 'top', size: 'height', rel: 'pageY'}, 
-				 {button: 'bottom', changes: 'bottom', size: 'height', rel: 'pageY'},
-				 {button: 'left', changes: 'left', size: 'width', rel: 'pageX'},
-				 {button: 'right', changes: ' left', size: 'width', rel: 'pageX'},
+				[{ button: 'top', changes: 'top', size: 'height', rel: 'pageY' },
+				{ button: 'bottom', changes: 'bottom', size: 'height', rel: 'pageY' },
+				{ button: 'left', changes: 'left', size: 'width', rel: 'pageX' },
+				{ button: 'right', changes: ' left', size: 'width', rel: 'pageX' },
 				].forEach(elem => {
 
-			         let button = $(`circle-${elem.button}`)
-	
-			         let st = 0, c = 0, stsize=0;
+					let button = $(`circle-${elem.button}`)
 
-			         button.addEventListener('mousedown', (ev) => {
-			         	stsize = helper[elem.size]
-			         	st = ev[elem.rel];
+					let st = 0, c = 0, stsize = 0;
+
+					button.addEventListener('mousedown', (ev) => {
+						stsize = helper[elem.size]
+						st = ev[elem.rel];
 						c = helper[elem.button];
-						 
-                        if (elem.button == 'right') c = helper['left']
-			         	
-			         	dom.body.addEventListener('mousemove', modify)
 
-			         	dom.body.addEventListener('mouseup', function fn(e){
-                              dom.body.removeEventListener('mousemove', modify);
-                              dom.body.removeEventListener('mouseup', fn);
-			         	});
-			         })
+						if (elem.button == 'right') c = helper['left']
 
-			         let parent = $('box');
-			         let el = $('helper');
+						dom.body.addEventListener('mousemove', modify)
 
-			         function modify(e){
-						let dist = st -  e[elem.rel];
+						dom.body.addEventListener('mouseup', function fn(e) {
+							dom.body.removeEventListener('mousemove', modify);
+							dom.body.removeEventListener('mouseup', fn);
+						});
+					})
 
-						if (elem.button == 'left' || elem.button == 'bottom') dist = -dist; 
+					let parent = $('box');
+					let el = $('helper');
 
-			         	helper[elem.size] = stsize + dist;
+					function modify(e) {
+						let dist = st - e[elem.rel];
 
-			         	if (helper[elem.size] < 10) helper[elem.size]  = 10
+						if (elem.button == 'left' || elem.button == 'bottom') dist = -dist;
 
-						
-						if (elem.button == 'top' || elem.button == 'right'){
+						helper[elem.size] = stsize + dist;
+
+						if (helper[elem.size] < 10) helper[elem.size] = 10
+
+
+						if (elem.button == 'top' || elem.button == 'right') {
 							let delta = stsize - helper[elem.size];
 
 							if (elem.button == 'top')
-							   helper[elem.button] = c + delta;
-							else 
-							{
+								helper[elem.button] = c + delta;
+							else {
 								helper['left'] = c + delta;
 								elem.changes = 'left';
-						    }
+							}
 						}
-					    		    
 
-                        setStyle(parent, {
-			         		[elem.size]: helper[elem.size] + 'px',
-			         		[elem.changes]: helper[elem.changes] + 'px'
-			         	})
 
-			         	setStyle(el, {
+						setStyle(parent, {
 							[elem.size]: helper[elem.size] + 'px',
-			         	})
-			         }
-			     })
-		    })
+							[elem.changes]: helper[elem.changes] + 'px'
+						})
+
+						setStyle(el, {
+							[elem.size]: helper[elem.size] + 'px',
+						})
+					}
+				})
+			})
 		})()
-          
-    </script>
+
+	</script>
 </head>
-<body> 
-    <nav class="navbar navbar-inverse">
-	  <div class="container-fluid">
-	     <div class="navbar-header">
-		  <!-- <a class="navbar-brand" href="#" style= "margin-top:20px;">
+
+<body>
+	<nav class="navbar navbar-inverse">
+		<div class="container-fluid">
+			<div class="navbar-header">
+				<!-- <a class="navbar-brand" href="#" style= "margin-top:20px;">
 		   Paint  &nbsp; <span class="glyphicon glyphicon-thumbs-up"></span> 
 		</a> -->
-		   </div>
-		   <ul class="nav navbar-nav" id = "first_li">
-			  </ul>
-	      </div>
-		</nav>
-  <div class= "container-fluid position-relative">
-      <div class = "row"> 
-		 <div id = "start"></div> 		 
-	  </div>
+			</div>
+			<ul class="nav navbar-nav" id="first_li">
+			</ul>
+		</div>
+	</nav>
+	<div class="container-fluid position-relative">
+		<div class="row">
+			<div id="start"></div>
+		</div>
 
- </div>
+	</div>
 
- <div class = "box" id='box'>
-	 <div class='position-relative' style='z-index: 1;'>
-		<div class='position-absolute circle' id='circle-top' style='top: -7px; left: calc(50% - 7px);'></div>
-		<div class='position-absolute circle' id='circle-bottom' style='bottom: -7px; left: calc(50% - 7px);'></div>
-		<div class='position-absolute circle' id='circle-left' style='top:calc(50% - 7px);right: -7px;'></div>
-		<div class='position-absolute circle' id='circle-right' style='top:calc(50% - 7px);left: -7px;'></div>
-	 </div>
+	<div class="box" id='box'>
+		<div class='position-relative' style='z-index: 1;'>
+			<div class='position-absolute circle' id='circle-top' style='top: -7px; left: calc(50% - 7px);'></div>
+			<div class='position-absolute circle' id='circle-bottom' style='bottom: -7px; left: calc(50% - 7px);'></div>
+			<div class='position-absolute circle' id='circle-left' style='top:calc(50% - 7px);right: -7px;'></div>
+			<div class='position-absolute circle' id='circle-right' style='top:calc(50% - 7px);left: -7px;'></div>
+		</div>
 
-	 <div class='helper' id='helper'></div>
- </div>
-   
+		<div class='helper' id='helper'></div>
+	</div>
 
-    <!-- <form id='testForm'>
+
+	<!-- <form id='testForm'>
         <input type="submit" /> Submit
 	</form> -->
 
-     <script>
-	   createPaint();
-	   drawCircle();
+	<script>
+		createPaint();
+		drawCircle();
 
-	   function goAndSelectErase(){
-	      $('canvas').style.cursor = "url('eraser.ico'),auto";
-		  
-	   }
-	   function goAndCloseErase(){
-	     $('canvas').style.cursor = "url('pencil.cur'),auto";
-		  
-	   }
-	   function drawCircle(){
-	     const canvas = $('canvas');
-		 const ctx    = canvas.getContext("2d");
-		 var sizes = [30,50,80,120,170,230,300];
-		 var colors = ['red','orange','yellow','green','blue','indigo','violet'];
-		 ctx.globalAlpha = .31;
-		 ctx.beginPath();
-		   for(var i = 7; i>=1; i--){
-		     ctx.beginPath();    
-		     ctx.fillStyle = colors[i-1];
-		     ctx.arc(window.innerWidth/2,window.innerHeight/2+200,sizes[i-1],0,2*Math.PI,true);
-		     ctx.fill();
-		   }
-		 
-	   }
-		 </script>
+		function goAndSelectErase() {
+			$('canvas').style.cursor = "url('eraser.ico'),auto";
+
+		}
+		function goAndCloseErase() {
+			$('canvas').style.cursor = "url('pencil.cur'),auto";
+
+		}
+		function drawCircle() {
+			const canvas = $('canvas');
+			const ctx = canvas.getContext("2d");
+			var sizes = [30, 50, 80, 120, 170, 230, 300];
+			var colors = ['red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet'];
+			ctx.globalAlpha = .31;
+			ctx.beginPath();
+			for (var i = 7; i >= 1; i--) {
+				ctx.beginPath();
+				ctx.fillStyle = colors[i - 1];
+				ctx.arc(window.innerWidth / 2, window.innerHeight / 2 + 200, sizes[i - 1], 0, 2 * Math.PI, true);
+				ctx.fill();
+			}
+
+		}
+	</script>
 </body>
+
 </html>
