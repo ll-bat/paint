@@ -510,13 +510,53 @@
 			}
 		}
 
+
+		tools.printColorDistance = (ev, cx) => {
+			const testColor = prompt('Enter main color in hex format')
+			const potentialColorsString = prompt('Enter potential colors (space seprated, all in hex format)')
+			const potentialColors = getColorsArrayFromInput(potentialColorsString)
+			for (const color of potentialColors) {
+				const colorDistance = distanceBetweenTwoColors(
+					color,
+					testColor
+				)
+				console.log(`${testColor} - ${color} = ${colorDistance}`)
+			}
+			// const testColor = "#eeeeee"
+			// const potentialColors = ['#eeeeee', '#efefef', '#fefefe', '#ffffff']
+		}
+
+		tools.printColorsOfTheLine = (ev, cx) => {
+			let startPoint = { x: ev.clientX, y: ev.clientY }
+			let endPoint = { x: null, y: null }
+			cx.canvas.addEventListener('mouseup', function tmpEvent(endEvent) {
+				cx.canvas.removeEventListener('mouseup', tmpEvent)
+				endPoint.x = endEvent.clientX + 1
+				endPoint.y = endEvent.clientY + 1
+				run();
+			})
+
+			function run() {
+				startPoint = relativePos(startPoint, cx.canvas)
+				endPoint = relativePos(endPoint, cx.canvas)
+
+				const colorsMap = {}
+				for (let x = startPoint.x; x < endPoint.x; x++) {
+					const color = getPxColor(x, startPoint.y, cx)
+					colorsMap[color] = true
+				}
+				console.log(Object.keys(colorsMap))
+			}
+		}
+
+
 		tools.printColorsOfThisRange = (ev, cx) => {
 			let startPoint = { x: ev.clientX, y: ev.clientY }
 			let endPoint = { x: null, y: null }
 			cx.canvas.addEventListener('mouseup', function tmpEvent(endEvent) {
 				cx.canvas.removeEventListener('mouseup', tmpEvent)
-				endPoint.x = endEvent.clientX
-				endPoint.y = endEvent.clientY
+				endPoint.x = endEvent.clientX + 1
+				endPoint.y = endEvent.clientY + 1
 				run();
 			})
 
@@ -535,41 +575,50 @@
 			}
 		}
 
-		tools.printColorsOfTheLine = (ev, cx) => {
-			let startPoint = { x: ev.clientX, y: ev.clientY }
-			let endPoint = { x: null, y: null }
-			cx.canvas.addEventListener('mouseup', function tmpEvent(endEvent) {
-				cx.canvas.removeEventListener('mouseup', tmpEvent)
-				endPoint.x = endEvent.clientX
-				endPoint.y = endEvent.clientY
-				run();
-			})
-
-			function run() {
-				startPoint = relativePos(startPoint, cx.canvas)
-				endPoint = relativePos(endPoint, cx.canvas)
-
-				const colorsMap = {}
-				for (let x = startPoint.x; x < endPoint.x; x++) {
-					const color = getPxColor(x, startPoint.y, cx)
-					colorsMap[color] = true
+		tools.makeFigureBackgroundTransparentUntil = (ev, cx) => {
+			let checkFunction = null;
+			while (!checkFunction) {
+				const functionBody = prompt('Enter run-until function body (function will be called with one parameter: hexcolor) and your function should return true or false')
+				try {
+					const fullBody = `return ${functionBody}`
+					console.log(fullBody)
+					checkFunction = new Function('hexcolor', fullBody)
+					const flag = checkFunction('')
+					if (flag !== true && flag !== false) {
+						throw new DOMException('function body must return boolean value')
+					}
+				} catch (e) {
+					alert('invalid function body. please, reenter function body')
+					checkFunction = null;
 				}
-				console.log(Object.keys(colorsMap))
+			}
+			const { width, height } = cx.canvas
+			for (let x = 0; x < width; x++) {
+				for (let y = 0; y < height; y++) {
+					const color = getPxColor(x, y, cx)
+					if (!checkFunction(color)) {
+						break
+					}
+					makePixelTransparent(cx, x, y)
+				}
+				console.log(`finished ${x} out of ${width}`)
+			}
+
+			for (let x = 0; x < width; x++) {
+				for (let y = height - 1; y >= 0; y--) {
+					const color = getPxColor(x, y, cx)
+					if (!checkFunction(color)) {
+						break
+					}
+					makePixelTransparent(cx, x, y)
+				}
+				console.log(`finished ${x} out of ${width}`)
 			}
 		}
 
 		tools.makeFigureBackgroundTransparent = (ev, cx) => {
 			const colors = prompt('Enter space separated exclude colors (e.i those colors which you want to make transparent')
-			const replaceFields = ['"', "'", ' ', '[', '{', ']', '}']
-			
-			const colorsArray = colors
-				.trim()
-				.split(',')
-				.map(c => {
-					let str = c;
-					replaceFields.forEach(char => str = str.replaceAll(char, ''))
-					return str
-				})
+			const colorsArray = getColorsArrayFromInput(colors)
 
 			const excludeColors = colorsArray
 			console.log(excludeColors)
@@ -600,6 +649,18 @@
 			// }
 		}
 
+		function getColorsArrayFromInput(colors) {
+			const replaceFields = ['"', "'", ' ', '[', '{', ']', '}']
+			return colors
+				.trim()
+				.split(',')
+				.map(c => {
+					let str = c;
+					replaceFields.forEach(char => str = str.replaceAll(char, ''))
+					return str
+				})
+		}
+
 		function getPxColor(x, y, cx) {
 			data = cx.getImageData(x, y, 1, 1).data
 			hex = "#" + ("000000" + rgbToHex(data[0], data[1], data[2])).slice(-6)
@@ -628,12 +689,36 @@
 			ctx.putImageData(imgd, x, y);
 		}
 
+		function distanceBetweenTwoColors(colorRed, colorGreen, colorBlue, pixelRed, pixelGreen, pixelBlue) {
+			// copied from stackoverflow ! 
+			if (typeof colorRed === "string" && (colorRed[0] === '#')) {
+				const pixelHex = colorGreen;
+				[colorRed, colorGreen, colorBlue] = hexToRgb(colorRed);
+				[pixelRed, pixelGreen, pixelBlue] = hexToRgb(pixelHex);
+			}
+
+			var diffR, diffG, diffB;
+			diffR = (colorRed - pixelRed);
+			diffG = (colorGreen - pixelGreen);
+			diffB = (colorBlue - pixelBlue);
+			return (Math.sqrt(diffR * diffR + diffG * diffG + diffB * diffB));
+		}
+
 		function rgbToHex(r, g, b) {
 			if (r > 255 || g > 255 || b > 255)
 				throw "Invalid color component";
 			return ((r << 16) | (g << 8) | b).toString(16);
 		}
 
+		function hexToRgb(hex) {
+			// returns r, g, b
+			var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+			return result ? [
+				parseInt(result[1], 16),
+				parseInt(result[2], 16),
+				parseInt(result[3], 16)
+			] : null;
+		}
 
 
 		function debugBase64(base64URL) {
