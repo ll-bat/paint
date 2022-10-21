@@ -575,6 +575,75 @@
 			}
 		}
 
+		function selectRange(cx) {
+			return new Promise((next) => {
+				cx.canvas.addEventListener('mousedown', function tmpMousedown(mousedownEvent) {
+					console.log('here')
+					mousedownEvent.stopPropagation();
+
+					let startPoint = { x: mousedownEvent.clientX, y: mousedownEvent.clientY }
+					let endPoint = { x: null, y: null }
+					
+					cx.canvas.addEventListener('mouseup', function tmpEvent(endEvent) {
+						cx.canvas.removeEventListener('mousedown', tmpMousedown);
+						cx.canvas.removeEventListener('mouseup', tmpEvent)
+						endPoint.x = endEvent.clientX + 1;
+						endPoint.y = endEvent.clientY + 1;
+
+						startPoint = relativePos(startPoint, cx.canvas);
+						endPoint = relativePos(endPoint, cx.canvas);
+
+						next({
+							fromX: startPoint.x,
+							fromY: startPoint.y,
+							toX: endPoint.x,
+							toY: endPoint.y,
+						})
+					})
+				})
+
+				
+			})
+		}
+
+		let isSelectingRange = false;
+		tools.replaceColorsWithFixedColor = async (ev, cx) => {
+			if (isSelectingRange) {
+				return 
+			}
+
+			const colors = prompt('Enter space separated to replace colors')
+			const colorsArray = getColorsArrayFromInput(colors)
+			const replaceByColor = prompt('Enter to replace by color') 
+
+			isSelectingRange = true;
+			const {fromX, fromY, toX, toY} = await selectRange(cx)
+			console.log(fromX, fromY, toX, toY)
+			isSelectingRange = false;
+
+			for (let x = fromX; x < toX; x++) {
+				for (let y = fromY; y < toY; y++) {
+					const thisPxColor = getPxColor(x, y, cx);
+
+					for (const toReplaceColor of colorsArray) {
+						if (thisPxColor !== "#000000") {
+							console.log(
+								thisPxColor, 
+								toReplaceColor,
+								distanceBetweenTwoColors(thisPxColor, toReplaceColor)
+							)
+						}
+					
+						if (distanceBetweenTwoColors(thisPxColor, toReplaceColor) < 25) {
+							setPixelColor(cx, x, y, replaceByColor)
+							break;
+						} 
+					}
+				}
+				console.log(`finished ${x} out of ${toX}`)
+			}
+		}
+
 		tools.makeFigureBackgroundTransparentUntil = (ev, cx) => {
 			let checkFunction = null;
 			while (!checkFunction) {
@@ -613,6 +682,28 @@
 					makePixelTransparent(cx, x, y)
 				}
 				console.log(`finished ${x} out of ${width}`)
+			}
+
+			for (let y = 0; y < height; y++) {
+				for (let x = 0; x < width; x++) {
+					const color = getPxColor(x, y, cx)
+					if (!checkFunction(color)) {
+						break
+					}
+					makePixelTransparent(cx, x, y)
+				}
+				console.log(`finished ${y} out of ${width}`)
+			}
+
+			for (let y = 0; y < height; y++) {
+				for (let x = width - 1; x >= 0; x--) {
+					const color = getPxColor(x, y, cx)
+					if (!checkFunction(color)) {
+						break
+					}
+					makePixelTransparent(cx, x, y)
+				}
+				console.log(`finished ${y} out of ${width}`)
 			}
 		}
 
